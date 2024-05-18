@@ -18,53 +18,21 @@ shots.each_slice(2) do |num|
   frames << num
 end
 
-last_frame = []
-num = 0
-flg = 0
-
-frames.each do |frame|
-  if num >= 9
-    if frame == [10, 0]
-      last_frame << 10
-    else
-      last_frame << frame[0]
-      last_frame << frame[1] if frame.length == 2
-    end
-    flg += 1
-  end
-  num += 1
-end
-frames[9] = last_frame
-
-(1..flg - 1).each do
-  frames.pop
-end
+last_frame = frames[9..].map {|n| n==[10,0] ? [10] : n}.flatten
+new_frames = frames[0..8].push(last_frame)
 
 point = 0
-strike = false
-spare = false
-double = false
+strike_in_previous_frame = false
+spare_in_previous_frame = false
+double_in_previous_frame = false
 
-frames.each do |frame|
-  if double == true
-    point += frame[0]
-    double = false
-  end
-  if strike == true
-    point += frame[0] + frame[1]
-    double = true if frame[0] == 10
-  elsif spare == true
-    point += frame[0]
-  end
-
+new_frames.each do |frame|
+  point += frame[0] if strike_in_previous_frame || spare_in_previous_frame
+  point += frame[0] if double_in_previous_frame
+  point += frame[1] if strike_in_previous_frame
   point += frame.sum
-  strike = false
-  spare = false
-
-  if frame[0] == 10
-    strike = true
-  elsif frame.sum == 10
-    spare = true
-  end
+  double_in_previous_frame = strike_in_previous_frame && frame[0] == 10
+  strike_in_previous_frame = frame[0] == 10
+  spare_in_previous_frame = !strike_in_previous_frame && frame.sum == 10
 end
 puts point
