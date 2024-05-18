@@ -18,7 +18,7 @@ shots.each_slice(2) do |num|
   frames << num
 end
 
-last_frame = frames[9..].map {|n| n==[10,0] ? [10] : n}.flatten
+last_frame = frames[9..].map { |n| n == [10, 0] ? [10] : n }.flatten
 new_frames = frames[0..8].push(last_frame)
 
 point = 0
