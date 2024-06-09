@@ -1,12 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+COLUMN_SIZE = 3
+COLUMN_SPACE = 2
+
 def find_file_information
   files = Dir.glob('*')
-  file_size = files.size
-  interval = file_size.ceildiv(LINE_SIZE)
+  interval = files.size.ceildiv(COLUMN_SIZE)
   max_file_size = files.map(&:length).max
-  space_size = max_file_size + 2
+  space_size = max_file_size + COLUMN_SPACE
   display_file(files, interval, space_size)
 end
 
@@ -14,7 +16,7 @@ def display_file(files, interval, space_size)
   (0...interval).each do |num|
     file_array = []
     line = num
-    3.times do
+    COLUMN_SIZE.times do
       file_array << files[line]
       line += interval
     end
@@ -22,5 +24,4 @@ def display_file(files, interval, space_size)
   end
 end
 
-LINE_SIZE = 3
 find_file_information
