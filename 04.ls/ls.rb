@@ -7,15 +7,15 @@ COLUMN_SIZE = 3
 COLUMN_SPACE = 2
 
 def configure_command_line_option
-  command_line_option = nil
+  command_line_a_option = nil
   opts = OptionParser.new
-  opts.on('-a') { command_line_option = 'a' }
+  opts.on('-a') { command_line_a_option = 'a' }
   opts.parse!(ARGV)
-  command_line_option
+  command_line_a_option
 end
 
-def configure_file_name_by_command_line_option(command_line_option)
-  if command_line_option
+def configure_file_name_by_command_line_option(command_line_a_option)
+  if command_line_a_option
     Dir.glob('*', File::FNM_DOTMATCH).sort!
   else
     Dir.glob('*')
@@ -30,8 +30,8 @@ def configure_file_information(files)
 end
 
 def display_file_and_directory_in_3_columns
-  command_line_option = configure_command_line_option
-  files = configure_file_name_by_command_line_option(command_line_option)
+  command_line_a_option = configure_command_line_option
+  files = configure_file_name_by_command_line_option(command_line_a_option)
   interval, space_size = configure_file_information(files)
 
   (0...interval).each do |num|
