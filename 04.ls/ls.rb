@@ -1,18 +1,36 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'optparse'
+
 COLUMN_SIZE = 3
 COLUMN_SPACE = 2
 
-def find_file_information
-  files = Dir.glob('*')
+def configure_command_line_option
+  a_option = false
+  opts = OptionParser.new
+  opts.on('-a') { a_option = true }
+  opts.parse!(ARGV)
+  a_option
+end
+
+def configure_file_name_by_command_line_option(a_option)
+  dir_option = a_option ? File::FNM_DOTMATCH : 0
+  Dir.glob('*', dir_option).sort!
+end
+
+def configure_file_interval_and_space_size(files)
   interval = files.size.ceildiv(COLUMN_SIZE)
   max_file_size = files.map(&:length).max
   space_size = max_file_size + COLUMN_SPACE
-  display_file(files, interval, space_size)
+  [interval, space_size]
 end
 
-def display_file(files, interval, space_size)
+def display_file_and_directory_in_columns
+  a_option = configure_command_line_option
+  files = configure_file_name_by_command_line_option(a_option)
+  interval, space_size = configure_file_interval_and_space_size(files)
+
   (0...interval).each do |num|
     file_array = []
     line = num
@@ -24,4 +42,4 @@ def display_file(files, interval, space_size)
   end
 end
 
-find_file_information
+display_file_and_directory_in_columns
