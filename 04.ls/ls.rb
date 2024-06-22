@@ -8,15 +8,18 @@ COLUMN_SPACE = 2
 
 def configure_command_line_option
   a_option = false
+  r_option = false
   opts = OptionParser.new
   opts.on('-a') { a_option = true }
+  opts.on('-r') { r_option = true }
   opts.parse!(ARGV)
-  a_option
+  [a_option, r_option]
 end
 
-def configure_file_name_by_command_line_option(a_option)
+def configure_file_name_by_command_line_option(a_option, r_option)
   dir_option = a_option ? File::FNM_DOTMATCH : 0
-  Dir.glob('*', dir_option).sort!
+  files = Dir.glob('*', dir_option).sort!
+  r_option ? files.reverse : files
 end
 
 def configure_file_interval_and_space_size(files)
@@ -27,8 +30,8 @@ def configure_file_interval_and_space_size(files)
 end
 
 def display_file_and_directory_in_columns
-  a_option = configure_command_line_option
-  files = configure_file_name_by_command_line_option(a_option)
+  a_option, r_option = configure_command_line_option
+  files = configure_file_name_by_command_line_option(a_option, r_option)
   interval, space_size = configure_file_interval_and_space_size(files)
 
   (0...interval).each do |num|
