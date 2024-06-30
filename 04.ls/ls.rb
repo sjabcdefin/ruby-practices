@@ -34,20 +34,21 @@ def configure_file_interval_and_space_size(files)
 end
 
 def display_file_and_directory_when_l_option(files)
-  (0...files.size).each do |num|
-    l_option_file = File::Stat.new(files[num])
-    file_mode = format('%06d', l_option_file.mode.to_s(8))
-    l_option_mtime = l_option_file.mtime
-    file_date_time = { month: l_option_mtime.mon, day: l_option_mtime.day, hour: l_option_mtime.hour, min: l_option_mtime.min }
-    l_option_data = []
-    l_option_data << FILE_TYPE[file_mode[0, 2]] + (3..5).map { |n| FILE_PERMISSION[file_mode[n, 1]] }.join\
-                  << format('%2d', l_option_file.nlink)\
-                  << FILE_USER[l_option_file.uid]\
-                  << FILE_GROUP[l_option_file.gid]\
-                  << format('%4d', l_option_file.size).ljust(5)\
-                  << format('%<month>d月 %<day>2d %<hour>02d:%<min>02d', file_date_time)\
-                  << files[num]
-    puts l_option_data.join(' ')
+  files.each do |file|
+    file_attribute = File::Stat.new(file)
+    file_mode = format('%06d', file_attribute.mode.to_s(8))
+    last_update_time = file_attribute.mtime
+    file_date_time = { month: last_update_time.mon, day: last_update_time.day, hour: last_update_time.hour, min: last_update_time.min }
+    display_items = [
+      FILE_TYPE[file_mode[0, 2]] + (3..5).map { |n| FILE_PERMISSION[file_mode[n, 1]] }.join,
+      format('%2d', file_attribute.nlink),
+      FILE_USER[file_attribute.uid],
+      FILE_GROUP[file_attribute.gid],
+      format('%4d', file_attribute.size).ljust(5),
+      format('%<month>d月 %<day>2d %<hour>02d:%<min>02d', file_date_time),
+      file
+    ]
+    puts display_items.join(' ')
   end
 end
 
