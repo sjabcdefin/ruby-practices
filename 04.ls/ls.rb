@@ -5,12 +5,17 @@ require 'optparse'
 
 COLUMN_SIZE = 3
 COLUMN_SPACE = 2
+FILE_TYPE = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }.freeze
+FILE_PERMISSION = { '0' => '---', '1' => '--x', '2' => '-w-', '3' => '-wx', '4' => 'r--', '5' => 'r-x', '6' => 'rw-', '7' => 'rwx' }.freeze
+FILE_USER = { 0 => 'root', 1000 => 'tomoka' }.freeze
+FILE_GROUP = { 0 => 'root', 1000 => 'tomoka' }.freeze
 
 def configure_command_line_option
   opts = OptionParser.new
   options = { a_option: false, r_option: false }
   opts.on('-a') { options[:a_option] = true }
   opts.on('-r') { options[:r_option] = true }
+  opts.on('-l') { options[:l_option] = true }
   opts.parse!(ARGV)
   options
 end
@@ -28,11 +33,27 @@ def configure_file_interval_and_space_size(files)
   [interval, space_size]
 end
 
-def display_file_and_directory_in_columns
-  options = configure_command_line_option
-  files = configure_file_name_by_command_line_option(options)
-  interval, space_size = configure_file_interval_and_space_size(files)
+def display_attributes(files)
+  files.each do |file|
+    file_attribute = File::Stat.new(file)
+    file_mode = format('%06d', file_attribute.mode.to_s(8))
+    modify_time = file_attribute.mtime
+    file_date_time = { month: modify_time.mon, day: modify_time.day, hour: modify_time.hour, min: modify_time.min }
+    display_items = [
+      FILE_TYPE[file_mode[0, 2]] + (3..5).map { |n| FILE_PERMISSION[file_mode[n, 1]] }.join,
+      format('%2d', file_attribute.nlink),
+      FILE_USER[file_attribute.uid],
+      FILE_GROUP[file_attribute.gid],
+      format('%4d', file_attribute.size).ljust(5),
+      format('%<month>d月 %<day>2d %<hour>02d:%<min>02d', file_date_time),
+      file
+    ]
+    puts display_items.join(' ')
+  end
+end
 
+def display_names_in_columns(files)
+  interval, space_size = configure_file_interval_and_space_size(files)
   (0...interval).each do |num|
     file_array = []
     line = num
@@ -44,4 +65,14 @@ def display_file_and_directory_in_columns
   end
 end
 
-display_file_and_directory_in_columns
+def display_file_list
+  options = configure_command_line_option
+  files = configure_file_name_by_command_line_option(options)
+  if options[:l_option]
+    display_attributes(files)
+  else
+    display_names_in_columns(files)
+  end
+end
+
+display_file_list
