@@ -33,12 +33,12 @@ def configure_file_interval_and_space_size(files)
   [interval, space_size]
 end
 
-def display_file_and_directory_when_l_option(files)
+def display_attributes(files)
   files.each do |file|
     file_attribute = File::Stat.new(file)
     file_mode = format('%06d', file_attribute.mode.to_s(8))
-    last_update_time = file_attribute.mtime
-    file_date_time = { month: last_update_time.mon, day: last_update_time.day, hour: last_update_time.hour, min: last_update_time.min }
+    modify_time = file_attribute.mtime
+    file_date_time = { month: modify_time.mon, day: modify_time.day, hour: modify_time.hour, min: modify_time.min }
     display_items = [
       FILE_TYPE[file_mode[0, 2]] + (3..5).map { |n| FILE_PERMISSION[file_mode[n, 1]] }.join,
       format('%2d', file_attribute.nlink),
@@ -52,7 +52,7 @@ def display_file_and_directory_when_l_option(files)
   end
 end
 
-def display_file_and_directory_in_columns(files)
+def display_names_in_columns(files)
   interval, space_size = configure_file_interval_and_space_size(files)
   (0...interval).each do |num|
     file_array = []
@@ -65,14 +65,14 @@ def display_file_and_directory_in_columns(files)
   end
 end
 
-def display_file_and_directory
+def display_file_list
   options = configure_command_line_option
   files = configure_file_name_by_command_line_option(options)
   if options[:l_option]
-    display_file_and_directory_when_l_option(files)
+    display_attributes(files)
   else
-    display_file_and_directory_in_columns(files)
+    display_names_in_columns(files)
   end
 end
 
-display_file_and_directory
+display_file_list
