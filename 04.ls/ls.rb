@@ -2,13 +2,14 @@
 # frozen_string_literal: true
 
 require 'optparse'
+require 'etc'
 
 COLUMN_SIZE = 3
 COLUMN_SPACE = 2
 FILE_TYPE = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }.freeze
 FILE_PERMISSION = { '0' => '---', '1' => '--x', '2' => '-w-', '3' => '-wx', '4' => 'r--', '5' => 'r-x', '6' => 'rw-', '7' => 'rwx' }.freeze
-FILE_USER = { 0 => 'root', 1000 => 'tomoka' }.freeze
-FILE_GROUP = { 0 => 'root', 1000 => 'tomoka' }.freeze
+FILE_USER = { 0 => 'root', Process.uid => Etc.getpwuid(Process.uid).name }.freeze
+FILE_GROUP = { 0 => 'root', Process.gid => Etc.getgrgid(Process.gid).name }.freeze
 
 def configure_command_line_option
   opts = OptionParser.new
