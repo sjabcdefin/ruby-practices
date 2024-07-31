@@ -42,14 +42,24 @@ def configure_total(wc_array)
   wc_array << total
 end
 
-def display_the_result_of_wc(options, option_number, wc_total_array, max_size)
-  wc_total_array.each do |array|
-    wc_display_array = [
-      (execute_each_option(array, 0, max_size) if options[:l_option] || option_number.zero?),
-      (execute_each_option(array, 1, max_size) if options[:w_option] || option_number.zero?),
-      (execute_each_option(array, 2, max_size) if options[:c_option] || option_number.zero?),
-      execute_each_option(array, 3)
-    ]
+def execute_each_option(array, index, max_size = 0)
+  if (0..2).cover?(index)
+    format("%#{max_size}d", array[index])
+  else
+    array[index]
+  end
+end
+
+def display_the_result_of_wc(options, option_number, wc_array, max_size)
+  max_size = 0 if option_number == 1 && wc_array.size == 1
+  wc_array.each do |array|
+    wc_display_array = []
+    options.each_with_index do |value, index|
+      next unless value[1] || option_number.zero?
+
+      wc_display_array << execute_each_option(array, index, max_size)
+    end
+    wc_display_array << execute_each_option(array, 3)
     wc_display_array.delete(nil)
     puts wc_display_array.join(' ')
   end
@@ -94,22 +104,14 @@ def display_the_result_of_wc_with_ls(options, option_number, result_array)
   puts wc_display_array.join
 end
 
-def execute_each_option(array, index, max_size = 0)
-  if (0..2).cover?(index)
-    format("%#{max_size}d", array[index])
-  else
-    array[index]
-  end
-end
-
 def run_wc_command
   options = configure_command_line_option
   option_number = 0
   options.each { |option| option_number += 1 if option[1] }
   if ARGV.size.positive?
     wc_array, max_size = configure_the_result_of_wc(ARGV)
-    wc_total_array = configure_total(wc_array) if ARGV.size > 1
-    display_the_result_of_wc(options, option_number, wc_total_array, max_size)
+    wc_array = configure_total(wc_array) if ARGV.size > 1
+    display_the_result_of_wc(options, option_number, wc_array, max_size)
   else
     input = ARGF.read
     result_array = configure_with_ls_command(input)
