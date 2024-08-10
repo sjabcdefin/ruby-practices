@@ -13,95 +13,64 @@ def configure_command_line_option
   options
 end
 
-def configure_the_result_of_wc(files)
-  wc_array = []
-  size_array = []
-  files.each do |file|
+def configure_wc_data(files)
+  wc_data = files.map do |file|
     file_content = File.read(file)
-    file_attribute = File::Stat.new(file)
-    wc_list = [
-      file_content.count("\n"),
-      file_content.split.size,
-      file_attribute.size,
-      file
-    ]
-    wc_array << wc_list
-    size_array << wc_list[0, 3]
+    wc_lists = configure_lines_words_bytes(file_content) << file
+    wc_lists
   end
-  max_size = size_array[0, 3].flatten.max.to_s.size
-  [wc_array, max_size]
+  max_digits = wc_data.flat_map { |wc_lists| wc_lists[0, 3] }.max.to_s.size
+  { wc_data:, max_digits: }
 end
 
-def configure_total(wc_array)
+def configure_total(wc_results)
   total = [
-    wc_array.transpose[0].sum,
-    wc_array.transpose[1].sum,
-    wc_array.transpose[2].sum,
+    wc_results.transpose[0].sum,
+    wc_results.transpose[1].sum,
+    wc_results.transpose[2].sum,
     '合計'
   ]
-  wc_array << total
+  wc_results << total
 end
 
-def execute_each_option(array, index, max_size = 0)
-  if (0..2).cover?(index)
-    format("%#{max_size}d", array[index])
-  else
-    array[index]
+def check_options(options, wc_results)
+  option_check_results = options.map.with_index { |value, index| wc_results[index] if value[1] }
+  option_check_results.delete(nil)
+  option_check_results.empty? ? wc_results[0, 3] : option_check_results
+end
+
+def display_wc_results(options, wc_results, max_digits)
+  wc_results.each do |result|
+    option_check_results = check_options(options, result)
+    formatted_results = if option_check_results.size == 1 && wc_results.size == 1
+                          option_check_results
+                        else
+                          option_check_results.map { |value| format("%#{max_digits}d", value) }
+                        end
+    formatted_results << result[3]
+    puts formatted_results.join(' ')
   end
 end
 
-def display_the_result_of_wc(options, option_number, wc_array, max_size)
-  max_size = 0 if option_number == 1 && wc_array.size == 1
-  wc_array.each do |array|
-    wc_display_array = []
-    options.each_with_index do |value, index|
-      next unless value[1] || option_number.zero?
-
-      wc_display_array << execute_each_option(array, index, max_size)
-    end
-    wc_display_array << execute_each_option(array, 3)
-    wc_display_array.delete(nil)
-    puts wc_display_array.join(' ')
-  end
+def configure_lines_words_bytes(input)
+  [
+    input.count("\n"),
+    input.split.size,
+    input.bytesize
+  ]
 end
 
-def split_files(files, replace_spaces: false)
-  content = replace_spaces ? files.gsub(/\s+/, "\n") : files
-  content.split(/(\n)/)
-end
-
-def configure_lines_words_bytes(wc_array, wc_line_break_array)
-  words = 0
-  bytes = 0
-  wc_line_break_array.each do |file|
-    words += file.split.size
-    bytes += file.bytesize
-  end
-  [wc_array.size, words, bytes]
-end
-
-def configure_with_ls_command(files)
-  wc_line_break_array = split_files(files)
-  wc_array = wc_line_break_array[0].include?('合計') ? files.split("\n") : split_files(files, true)
-  configure_lines_words_bytes(wc_array, wc_line_break_array)
-end
-
-def display_the_result_of_wc_with_ls(options, option_number, result_array)
-  wc_display_array = []
-  display_number = 0
-  options.each_with_index do |value, key|
-    next unless value[1] || option_number.zero?
-
-    case option_number
-    when 0, 2, 3
-      display_number += 1
-      format_string = display_number == 1 ? '%7d' : '%8d'
-      wc_display_array << format(format_string, result_array[key])
-    when 1
-      wc_display_array << result_array[key]
-    end
-  end
-  puts wc_display_array.join
+def display_wc_results_via_pipeline(options, wc_results)
+  option_check_results = check_options(options, wc_results)
+  formatted_results = if option_check_results.size > 1
+                        option_check_results.map.with_index do |value, index|
+                          format_string = index.zero? ? '%7d' : '%8d'
+                          format(format_string, value)
+                        end.join
+                      else
+                        option_check_results
+                      end
+  puts formatted_results
 end
 
 def run_wc_command
@@ -109,13 +78,15 @@ def run_wc_command
   option_number = 0
   options.each { |option| option_number += 1 if option[1] }
   if ARGV.size.positive?
-    wc_array, max_size = configure_the_result_of_wc(ARGV)
-    wc_array = configure_total(wc_array) if ARGV.size > 1
-    display_the_result_of_wc(options, option_number, wc_array, max_size)
+    wc_data = configure_wc_data(ARGV)
+    wc_results = wc_data[:wc_data]
+    max_digits = wc_data[:max_digits]
+    wc_results = configure_total(wc_results) if ARGV.size > 1
+    display_wc_results(options, wc_results, max_digits)
   else
     input = ARGF.read
-    result_array = configure_with_ls_command(input)
-    display_the_result_of_wc_with_ls(options, option_number, result_array)
+    wc_results = configure_lines_words_bytes(input)
+    display_wc_results_via_pipeline(options, wc_results)
   end
 end
 

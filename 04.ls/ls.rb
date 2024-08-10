@@ -34,7 +34,20 @@ def configure_file_interval_and_space_size(files)
   [interval, space_size]
 end
 
+def configure_max_nlink_size_block(files)
+  max_sizes, max_nlinks, number_of_block = [], [], 0
+  files.each do |file|
+    file_attribute = File::Stat.new(file)
+    max_sizes << file_attribute.size.to_s.size
+    max_nlinks << file_attribute.nlink.to_s.size
+    number_of_block += file_attribute.blocks
+  end
+  { max_sizes:, max_nlinks:, number_of_block: }
+end
+
 def display_attributes(files)
+  numbers = configure_max_nlink_size_block(files)
+  puts "合計 #{numbers[:number_of_block] / 2}"
   files.each do |file|
     file_attribute = File::Stat.new(file)
     file_mode = format('%06d', file_attribute.mode.to_s(8))
@@ -42,10 +55,10 @@ def display_attributes(files)
     file_date_time = { month: modify_time.mon, day: modify_time.day, hour: modify_time.hour, min: modify_time.min }
     display_items = [
       FILE_TYPE[file_mode[0, 2]] + (3..5).map { |n| FILE_PERMISSION[file_mode[n, 1]] }.join,
-      format('%2d', file_attribute.nlink),
+      format("%#{numbers[:max_nlinks].max}d", file_attribute.nlink),
       FILE_USER[file_attribute.uid],
       FILE_GROUP[file_attribute.gid],
-      format('%4d', file_attribute.size).ljust(5),
+      format("%#{numbers[:max_sizes].max}d ", file_attribute.size).ljust(numbers[:max_sizes].max),
       format('%<month>d月 %<day>2d %<hour>02d:%<min>02d', file_date_time),
       file
     ]
