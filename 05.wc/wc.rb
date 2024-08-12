@@ -13,80 +13,88 @@ def configure_command_line_option
   options
 end
 
-def configure_wc_data(files)
-  wc_data = files.map do |file|
+def generate_files_statistics(files)
+  files.map do |file|
     file_content = File.read(file)
-    wc_lists = configure_lines_words_bytes(file_content) << file
-    wc_lists
+    files_statistics = calculate_lines_words_bytes(file_content)
+    files_statistics[:file] = file
+    files_statistics
   end
-  max_digits = wc_data.flat_map { |wc_lists| wc_lists[0, 3] }.max.to_s.size
-  { wc_data:, max_digits: }
 end
 
-def configure_total(wc_results)
-  total = [
-    wc_results.transpose[0].sum,
-    wc_results.transpose[1].sum,
-    wc_results.transpose[2].sum,
-    '合計'
-  ]
-  wc_results << total
+def calculate_max_digits(files_statistics)
+  files_statistics.flat_map do |file_statistics|
+    [
+      file_statistics[:lines].to_s.size,
+      file_statistics[:words].to_s.size,
+      file_statistics[:bytes].to_s.size
+    ]
+  end.max
 end
 
-def check_options(options, wc_results)
-  option_check_results = options.map.with_index { |value, index| wc_results[index] if value[1] }
-  option_check_results.delete(nil)
-  option_check_results.empty? ? wc_results[0, 3] : option_check_results
+def calculate_total(files_statistics)
+  total = {
+    lines: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:lines] },
+    words: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:words] },
+    bytes: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:bytes] },
+    file: '合計'
+  }
+  files_statistics << total
 end
 
-def display_wc_results(options, wc_results, max_digits)
-  wc_results.each do |result|
-    option_check_results = check_options(options, result)
-    formatted_results = if option_check_results.size == 1 && wc_results.size == 1
-                          option_check_results
+def check_options(options, file_statistics)
+  option_check_results = {}
+  option_check_results[:lines] = file_statistics[:lines] if options[:l_option] || !options.value?(true)
+  option_check_results[:words] = file_statistics[:words] if options[:w_option] || !options.value?(true)
+  option_check_results[:bytes] = file_statistics[:bytes] if options[:c_option] || !options.value?(true)
+  option_check_results
+end
+
+def display_wc_results(options, files_statistics, max_digits)
+  files_statistics.each do |file_statistics|
+    option_check_results = check_options(options, file_statistics)
+    formatted_results = if option_check_results.values.size == 1 && files_statistics.size == 1
+                          option_check_results.values
                         else
-                          option_check_results.map { |value| format("%#{max_digits}d", value) }
+                          option_check_results.values.map { |value| format("%#{max_digits}d", value) }
                         end
-    formatted_results << result[3]
+    formatted_results << file_statistics[:file]
     puts formatted_results.join(' ')
   end
 end
 
-def configure_lines_words_bytes(input)
-  [
-    input.count("\n"),
-    input.split.size,
-    input.bytesize
-  ]
+def calculate_lines_words_bytes(input)
+  {
+    lines: input.count("\n"),
+    words: input.split.size,
+    bytes: input.bytesize
+  }
 end
 
-def display_wc_results_via_pipeline(options, wc_results)
-  option_check_results = check_options(options, wc_results)
-  formatted_results = if option_check_results.size > 1
-                        option_check_results.map.with_index do |value, index|
+def display_wc_results_via_pipeline(options, input_statistics)
+  option_check_results = check_options(options, input_statistics)
+  formatted_results = if option_check_results.values.size > 1
+                        option_check_results.values.map.with_index do |value, index|
                           format_string = index.zero? ? '%7d' : '%8d'
                           format(format_string, value)
                         end.join
                       else
-                        option_check_results
+                        option_check_results.values
                       end
   puts formatted_results
 end
 
 def run_wc_command
   options = configure_command_line_option
-  option_number = 0
-  options.each { |option| option_number += 1 if option[1] }
   if ARGV.size.positive?
-    wc_data = configure_wc_data(ARGV)
-    wc_results = wc_data[:wc_data]
-    max_digits = wc_data[:max_digits]
-    wc_results = configure_total(wc_results) if ARGV.size > 1
-    display_wc_results(options, wc_results, max_digits)
+    files_statistics = generate_files_statistics(ARGV)
+    max_digits = calculate_max_digits(files_statistics)
+    files_statistics = calculate_total(files_statistics) if ARGV.size > 1
+    display_wc_results(options, files_statistics, max_digits)
   else
     input = ARGF.read
-    wc_results = configure_lines_words_bytes(input)
-    display_wc_results_via_pipeline(options, wc_results)
+    input_statistics = calculate_lines_words_bytes(input)
+    display_wc_results_via_pipeline(options, input_statistics)
   end
 end
 
