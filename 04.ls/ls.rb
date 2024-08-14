@@ -11,7 +11,7 @@ FILE_PERMISSION = { '0' => '---', '1' => '--x', '2' => '-w-', '3' => '-wx', '4' 
 FILE_USER = { 0 => 'root', Process.uid => Etc.getpwuid(Process.uid).name }.freeze
 FILE_GROUP = { 0 => 'root', Process.gid => Etc.getgrgid(Process.gid).name }.freeze
 
-def configure_command_line_option
+def command_line_option
   opts = OptionParser.new
   options = { a_option: false, r_option: false }
   opts.on('-a') { options[:a_option] = true }
@@ -21,20 +21,20 @@ def configure_command_line_option
   options
 end
 
-def configure_file_name_by_command_line_option(options)
+def file_name_by_command_line_option(options)
   dir_option = options[:a_option] ? File::FNM_DOTMATCH : 0
   files = Dir.glob('*', dir_option).sort!
   options[:r_option] ? files.reverse : files
 end
 
-def configure_file_interval_and_space_size(files)
+def calculate_file_interval_and_space_size(files)
   interval = files.size.ceildiv(COLUMN_SIZE)
   max_file_size = files.map(&:length).max
   space_size = max_file_size + COLUMN_SPACE
-  [interval, space_size]
+  { interval:, space_size: }
 end
 
-def configure_max_nlink_size_block(files)
+def calculate_max_nlink_size_block(files)
   max_sizes, max_nlinks, number_of_block = [], [], 0
   files.each do |file|
     file_attribute = File::Stat.new(file)
@@ -46,7 +46,7 @@ def configure_max_nlink_size_block(files)
 end
 
 def display_attributes(files)
-  numbers = configure_max_nlink_size_block(files)
+  numbers = calculate_max_nlink_size_block(files)
   puts "合計 #{numbers[:number_of_block] / 2}"
   files.each do |file|
     file_attribute = File::Stat.new(file)
@@ -67,21 +67,21 @@ def display_attributes(files)
 end
 
 def display_names_in_columns(files)
-  interval, space_size = configure_file_interval_and_space_size(files)
-  (0...interval).each do |num|
+  sizes = calculate_file_interval_and_space_size(files)
+  (0...sizes[:interval]).each do |num|
     file_array = []
     line = num
     COLUMN_SIZE.times do
       file_array << files[line]
-      line += interval
+      line += sizes[:interval]
     end
-    puts file_array.compact.map { |file| file.ljust(space_size) }.join
+    puts file_array.compact.map { |file| file.ljust(sizes[:space_size]) }.join
   end
 end
 
 def display_file_list
-  options = configure_command_line_option
-  files = configure_file_name_by_command_line_option(options)
+  options = command_line_option
+  files = file_name_by_command_line_option(options)
   if options[:l_option]
     display_attributes(files)
   else
