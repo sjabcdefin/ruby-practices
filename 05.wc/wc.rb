@@ -3,7 +3,9 @@
 
 require 'optparse'
 
-def configure_command_line_option
+INTERVAL = 7
+
+def command_line_option
   opts = OptionParser.new
   options = { l_option: false, w_option: false, c_option: false }
   opts.on('-l') { options[:l_option] = true }
@@ -13,7 +15,7 @@ def configure_command_line_option
   options
 end
 
-def generate_files_statistics(files)
+def calculate_files_lines_words_bytes(files)
   files.map do |file|
     file_content = File.read(file)
     files_statistics = calculate_lines_words_bytes(file_content)
@@ -33,33 +35,23 @@ def calculate_max_digits(files_statistics)
 end
 
 def calculate_total(files_statistics)
-  total = {
-    lines: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:lines] },
-    words: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:words] },
-    bytes: files_statistics.inject(0) { |sum, file_statistics| sum + file_statistics[:bytes] },
+  files_statistics << {
+    lines: files_statistics.sum { |file_statistics| file_statistics[:lines] },
+    words: files_statistics.sum { |file_statistics| file_statistics[:words] },
+    bytes: files_statistics.sum { |file_statistics| file_statistics[:bytes] },
     file: '合計'
   }
-  files_statistics << total
 end
 
 def check_options(options, file_statistics)
-  option_check_results = {}
-  option_check_results[:lines] = file_statistics[:lines] if options[:l_option] || !options.value?(true)
-  option_check_results[:words] = file_statistics[:words] if options[:w_option] || !options.value?(true)
-  option_check_results[:bytes] = file_statistics[:bytes] if options[:c_option] || !options.value?(true)
-  option_check_results
-end
-
-def display_wc_results(options, files_statistics, max_digits)
-  files_statistics.each do |file_statistics|
-    option_check_results = check_options(options, file_statistics)
-    formatted_results = if option_check_results.values.size == 1 && files_statistics.size == 1
-                          option_check_results.values
-                        else
-                          option_check_results.values.map { |value| format("%#{max_digits}d", value) }
-                        end
-    formatted_results << file_statistics[:file]
-    puts formatted_results.join(' ')
+  if options.value?(true)
+    option_check_results = {}
+    option_check_results[:lines] = file_statistics[:lines] if options[:l_option]
+    option_check_results[:words] = file_statistics[:words] if options[:w_option]
+    option_check_results[:bytes] = file_statistics[:bytes] if options[:c_option]
+    option_check_results
+  else
+    file_statistics.slice(:lines, :words, :bytes)
   end
 end
 
@@ -71,30 +63,30 @@ def calculate_lines_words_bytes(input)
   }
 end
 
-def display_wc_results_via_pipeline(options, input_statistics)
-  option_check_results = check_options(options, input_statistics)
-  formatted_results = if option_check_results.values.size > 1
-                        option_check_results.values.map.with_index do |value, index|
-                          format_string = index.zero? ? '%7d' : '%8d'
-                          format(format_string, value)
-                        end.join
-                      else
-                        option_check_results.values
-                      end
-  puts formatted_results
+def display_wc_results(options, files_statistics, interval)
+  files_statistics.each do |file_statistics|
+    option_check_results = check_options(options, file_statistics)
+    formatted_results = if option_check_results.size == 1 && files_statistics.size == 1
+                          option_check_results.values
+                        else
+                          option_check_results.values.map { |value| format("%#{interval}d", value) }
+                        end
+    formatted_results << file_statistics[:file] if file_statistics[:file]
+    puts formatted_results.join(' ')
+  end
 end
 
 def run_wc_command
-  options = configure_command_line_option
+  options = command_line_option
   if ARGV.size.positive?
-    files_statistics = generate_files_statistics(ARGV)
-    max_digits = calculate_max_digits(files_statistics)
+    files_statistics = calculate_files_lines_words_bytes(ARGV)
+    interval = calculate_max_digits(files_statistics)
     files_statistics = calculate_total(files_statistics) if ARGV.size > 1
-    display_wc_results(options, files_statistics, max_digits)
+    display_wc_results(options, files_statistics, interval)
   else
     input = ARGF.read
     input_statistics = calculate_lines_words_bytes(input)
-    display_wc_results_via_pipeline(options, input_statistics)
+    display_wc_results(options, [input_statistics], INTERVAL)
   end
 end
 
