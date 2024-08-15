@@ -66,11 +66,8 @@ end
 def display_wc_results(options, files_statistics, interval)
   files_statistics.each do |file_statistics|
     option_check_results = check_options(options, file_statistics)
-    formatted_results = if option_check_results.size == 1 && files_statistics.size == 1
-                          option_check_results.values
-                        else
-                          option_check_results.values.map { |value| format("%#{interval}d", value) }
-                        end
+    interval = 0 if option_check_results.size == 1 && files_statistics.size == 1
+    formatted_results = option_check_results.values.map { |value| format("%#{interval}d", value) }
     formatted_results << file_statistics[:file] if file_statistics[:file]
     puts formatted_results.join(' ')
   end
