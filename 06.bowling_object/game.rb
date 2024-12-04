@@ -33,15 +33,8 @@ class Game
 
   def point
     point = 0
-    (0..9).each do |n|
-      frame_data, next_frame_data, after_next_frame_data = @frames.slice(n, 3)
-      next_frame_data ||= []
-      after_next_frame_data ||= []
-
-      frame = Frame.new(frame_data[0], frame_data[1], frame_data[2])
-      next_frame = Frame.new(next_frame_data[0], next_frame_data[1], next_frame_data[2])
-      after_next_frame = Frame.new(after_next_frame_data[0], after_next_frame_data[1], after_next_frame_data[2])
-
+    (0..9).each do |num|
+      frame, next_frame, after_next_frame = frame(num)
       if frame.strike?
         point += frame.score + next_frame.first_shot.score + next_frame.second_shot.score
         point += after_next_frame.first_shot.score if next_frame.first_shot.score == 10
@@ -52,6 +45,17 @@ class Game
       end
     end
     point
+  end
+
+  def frame(num)
+    frame_data, next_frame_data, after_next_frame_data = @frames.slice(num, 3)
+    next_frame_data ||= []
+    after_next_frame_data ||= []
+    [
+      Frame.new(frame_data[0], frame_data[1], frame_data[2]),
+      Frame.new(next_frame_data[0], next_frame_data[1], next_frame_data[2]),
+      Frame.new(after_next_frame_data[0], after_next_frame_data[1], after_next_frame_data[2])
+    ]
   end
 end
 
