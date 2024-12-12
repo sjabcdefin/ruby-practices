@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative './frame'
@@ -9,55 +8,29 @@ class Game
   end
 
   def split_into_frames
-    score = ARGV[0]
-
-    scores = score.split(',')
-
+    scores = ARGV[0].split(',')
     frames = []
     frame = []
 
     scores.each do |s|
       frame << s
 
-      if frames.size < 10
-        if frame.size >= 2 || s == 'X'
-          frames << frame.dup
-          frame.clear
-        end
-      else
-        frames.last << s
+      if frames.size < 9 && (frame.size >= 2 || s == 'X')
+        frames << Frame.new(*frame)
+        frame.clear
       end
     end
+
+    frames << Frame.new(*frame, final: true)
     frames
   end
 
   def point
     point = 0
     (0..9).each do |num|
-      frame, next_frame, after_next_frame = frame(num)
-      if frame.strike?
-        point += frame.score + next_frame.first_shot.score + next_frame.second_shot.score
-        point += after_next_frame.first_shot.score if next_frame.first_shot.score == 10
-      elsif frame.spare?
-        point += frame.score + next_frame.first_shot.score
-      else
-        point += frame.score
-      end
+      frame, next_frame, after_next_frame = @frames.slice(num, 3)
+      point += frame.total_score(next_frame, after_next_frame)
     end
     point
   end
-
-  def frame(num)
-    frame_data, next_frame_data, after_next_frame_data = @frames.slice(num, 3)
-    next_frame_data ||= []
-    after_next_frame_data ||= []
-    [
-      Frame.new(frame_data[0], frame_data[1], frame_data[2]),
-      Frame.new(next_frame_data[0], next_frame_data[1], next_frame_data[2]),
-      Frame.new(after_next_frame_data[0], after_next_frame_data[1], after_next_frame_data[2])
-    ]
-  end
 end
-
-game = Game.new
-puts game.point
