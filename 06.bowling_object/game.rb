@@ -26,11 +26,9 @@ class Game
   end
 
   def point
-    point = 0
-    (0..9).each do |num|
+    (0..9).sum do |num|
       frame, next_frame, after_next_frame = @frames.slice(num, 3)
-      point += frame.total_score(next_frame, after_next_frame)
+      frame.total_score(next_frame, after_next_frame)
     end
-    point
   end
 end
