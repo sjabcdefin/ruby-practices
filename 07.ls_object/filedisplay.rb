@@ -3,7 +3,7 @@
 require 'optparse'
 require_relative 'filedetail'
 
-class FileLister
+class FileDisplay
   COLUMN_SIZE = 3
   COLUMN_SPACE = 2
 
@@ -17,13 +17,13 @@ class FileLister
     if @options[:l_option]
       max_size_length = calculate_max_size_length
       max_link_length = calculate_max_link_length
-      total_blocks = calculate_blocks
+      total_blocks = calculate_total_blocks
       puts "合計 #{total_blocks / 2}"
       @file_details.each do |file_detail|
         puts file_detail.formatted_detail(max_size_length, max_link_length)
       end
     else
-      output_rows = generate_file_names_output
+      output_rows = format_file_names_for_display
       column_width = calculate_column_width
       output_rows.each do |row|
         puts row.compact.map { |file_name| file_name.ljust(column_width) }.join
@@ -35,7 +35,7 @@ class FileLister
 
   def parse_command_line_options
     opts = OptionParser.new
-    options = { a_option: false, r_option: false }
+    options = { a_option: false, r_option: false, l_option: false }
     opts.on('-a') { options[:a_option] = true }
     opts.on('-r') { options[:r_option] = true }
     opts.on('-l') { options[:l_option] = true }
@@ -49,7 +49,7 @@ class FileLister
     @options[:r_option] ? sorted_files.reverse : sorted_files
   end
 
-  def generate_file_names_output
+  def format_file_names_for_display
     interval = calculate_interval
     file_names = @file_details.map(&:name)
     file_names.each_slice(interval)
@@ -66,7 +66,7 @@ class FileLister
     @file_details.map(&:link_word_count).max
   end
 
-  def calculate_blocks
+  def calculate_total_blocks
     @file_details.sum(&:block)
   end
 
