@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'etc'
-require 'active_support/all'
+require 'active_support/core_ext/numeric/time'
 
 class FileDetail
   FILE_TYPE = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }.freeze
@@ -42,7 +42,7 @@ class FileDetail
     @file.blocks
   end
 
-  def length
+  def name_length
     @name.size
   end
 

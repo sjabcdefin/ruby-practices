@@ -15,9 +15,19 @@ class FileLister
   def display_files
     @file_details = @file_names.map { |file_name| FileDetail.new(file_name) }
     if @options[:l_option]
-      print_file_details
+      max_size_length = calculate_max_size_length
+      max_link_length = calculate_max_link_length
+      total_blocks = calculate_blocks
+      puts "合計 #{total_blocks / 2}"
+      @file_details.each do |file_detail|
+        puts file_detail.formatted_detail(max_size_length, max_link_length)
+      end
     else
-      print_file_names
+      output_rows = generate_file_names_output
+      column_width = calculate_column_width
+      output_rows.each do |row|
+        puts row.compact.map { |file_name| file_name.ljust(column_width) }.join
+      end
     end
   end
 
@@ -39,45 +49,36 @@ class FileLister
     @options[:r_option] ? sorted_files.reverse : sorted_files
   end
 
-  def print_file_details
-    file_items = calculate_file_detail_items
-    puts "合計 #{file_items[:total_blocks] / 2}"
-    @file_details.each do |file_detail|
-      puts file_detail.formatted_detail(file_items[:max_size_length], file_items[:max_link_length])
-    end
-  end
-
-  def calculate_file_detail_items
-    size_lengths = []
-    link_lengths = []
-    total_blocks = 0
-    @file_details.each do |file_detail|
-      size_lengths << file_detail.size_word_count
-      link_lengths << file_detail.link_word_count
-      total_blocks += file_detail.block
-    end
-    { max_size_length: size_lengths.max, max_link_length: link_lengths.max, total_blocks: }
-  end
-
-  def print_file_names
-    file_items = calculate_file_name_items
+  def generate_file_names_output
+    interval = calculate_interval
     file_names = @file_details.map(&:name)
-    file_names_per_row = file_names.each_slice(file_items[:interval])
-                                   .to_a
-                                   .map { |column| column.fill(nil, column.size...file_items[:interval]) }
-                                   .transpose
-    file_names_per_row.each do |row|
-      puts row.compact.map { |file_name| file_name.ljust(file_items[:space_size]) }.join
-    end
+    file_names.each_slice(interval)
+              .to_a
+              .map { |column| column.fill(nil, column.size...interval) }
+              .transpose
   end
 
-  def calculate_file_name_items
+  def calculate_max_size_length
+    @file_details.map(&:size_word_count).max
+  end
+
+  def calculate_max_link_length
+    @file_details.map(&:link_word_count).max
+  end
+
+  def calculate_blocks
+    @file_details.sum(&:block)
+  end
+
+  def calculate_interval
+    @file_details.size.ceildiv(COLUMN_SIZE)
+  end
+
+  def calculate_column_width
     name_lengths = []
     @file_details.each do |file_detail|
-      name_lengths << file_detail.length
+      name_lengths << file_detail.name_length
     end
-    interval = @file_details.size.ceildiv(COLUMN_SIZE)
-    space_size = name_lengths.max + COLUMN_SPACE
-    { interval:, space_size: }
+    name_lengths.max + COLUMN_SPACE
   end
 end
