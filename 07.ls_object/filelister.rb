@@ -1,20 +1,19 @@
 # frozen_string_literal: true
 
 require 'optparse'
-require 'etc'
 require_relative 'filedetail'
 
-COLUMN_SIZE = 3
-COLUMN_SPACE = 2
-
 class FileLister
+  COLUMN_SIZE = 3
+  COLUMN_SPACE = 2
+
   def initialize
     @options = parse_command_line_options
     @file_names = fetch_file_names
   end
 
   def display_files
-    @file_details = fetch_file_details
+    @file_details = @file_names.map { |file_name| FileDetail.new(file_name) }
     if @options[:l_option]
       print_file_details
     else
@@ -40,19 +39,11 @@ class FileLister
     @options[:r_option] ? sorted_files.reverse : sorted_files
   end
 
-  def fetch_file_details
-    file_details = []
-    @file_names.each do |file_name|
-      file_details << FileDetail.new(file_name)
-    end
-    file_details
-  end
-
   def print_file_details
     file_items = calculate_file_detail_items
     puts "合計 #{file_items[:total_blocks] / 2}"
     @file_details.each do |file_detail|
-      puts format_file_detail(file_detail, file_items)
+      puts file_detail.formatted_detail(file_items[:max_size_length], file_items[:max_link_length])
     end
   end
 
@@ -61,36 +52,22 @@ class FileLister
     link_lengths = []
     total_blocks = 0
     @file_details.each do |file_detail|
-      size_lengths << file_detail.size[:word_count]
-      link_lengths << file_detail.link[:word_count]
+      size_lengths << file_detail.size_word_count
+      link_lengths << file_detail.link_word_count
       total_blocks += file_detail.block
     end
-    { size_lengths:, link_lengths:, total_blocks: }
-  end
-
-  def format_file_detail(file_detail, file_items)
-    [
-      "#{file_detail.type}#{file_detail.permission.values.join}",
-      format("%#{file_items[:link_lengths].max}d", file_detail.link[:number]),
-      file_detail.user,
-      file_detail.group,
-      format("%#{file_items[:size_lengths].max}d", file_detail.size[:number]).ljust(file_items[:size_lengths].max),
-      format('%<month>2d月 %<day>2d', file_detail.update_time),
-      file_detail.within_six_months? ? format('%<hour>02d:%<min>02d', file_detail.update_time) : format('%<year>5d', file_detail.update_time),
-      file_detail.name
-    ].join(' ')
+    { max_size_length: size_lengths.max, max_link_length: link_lengths.max, total_blocks: }
   end
 
   def print_file_names
     file_items = calculate_file_name_items
-    (0...file_items[:interval]).each do |num|
-      columns = num
-      file_name_list = []
-      while columns < @file_details.size
-        file_name_list << @file_details[columns].name
-        columns += file_items[:interval]
-      end
-      puts file_name_list.compact.map { |file_name| file_name.ljust(file_items[:space_size]) }.join
+    file_names = @file_details.map(&:name)
+    file_names_per_row = file_names.each_slice(file_items[:interval])
+                                   .to_a
+                                   .map { |column| column.fill(nil, column.size...file_items[:interval]) }
+                                   .transpose
+    file_names_per_row.each do |row|
+      puts row.compact.map { |file_name| file_name.ljust(file_items[:space_size]) }.join
     end
   end
 

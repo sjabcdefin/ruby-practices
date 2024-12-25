@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
+require 'etc'
 require 'active_support/all'
 
-FILE_TYPE = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }.freeze
-FILE_PERMISSION = { '0' => '---', '1' => '--x', '2' => '-w-', '3' => '-wx', '4' => 'r--', '5' => 'r-x', '6' => 'rw-', '7' => 'rwx' }.freeze
-FILE_USER = { 0 => 'root', Process.uid => Etc.getpwuid(Process.uid).name }.freeze
-FILE_GROUP = { 0 => 'root', Process.gid => Etc.getgrgid(Process.gid).name }.freeze
-
 class FileDetail
+  FILE_TYPE = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }.freeze
+  FILE_PERMISSION = { '0' => '---', '1' => '--x', '2' => '-w-', '3' => '-wx', '4' => 'r--', '5' => 'r-x', '6' => 'rw-', '7' => 'rwx' }.freeze
+  FILE_USER = { 0 => 'root', Process.uid => Etc.getpwuid(Process.uid).name }.freeze
+  FILE_GROUP = { 0 => 'root', Process.gid => Etc.getgrgid(Process.gid).name }.freeze
+
   attr_reader :name
 
   def initialize(name)
@@ -15,6 +16,37 @@ class FileDetail
     @file = File::Stat.new(name)
     @file_mode = format('%06d', @file.mode.to_s(8))
   end
+
+  def formatted_detail(max_size_length, max_link_length)
+    [
+      "#{type}#{permission.values.join}",
+      format("%#{max_link_length}d", link),
+      user,
+      group,
+      format("%#{max_size_length}d", size),
+      format('%<month>2d月 %<day>2d', update_time),
+      within_six_months? ? format('%<hour>02d:%<min>02d', update_time) : format('%<year>5d', update_time),
+      name
+    ].join(' ')
+  end
+
+  def link_word_count
+    @file.nlink.to_s.size
+  end
+
+  def size_word_count
+    @file.size.to_s.size
+  end
+
+  def block
+    @file.blocks
+  end
+
+  def length
+    @name.size
+  end
+
+  private
 
   def type
     FILE_TYPE[@file_mode[0, 2]]
@@ -29,10 +61,7 @@ class FileDetail
   end
 
   def link
-    {
-      number: @file.nlink,
-      word_count: @file.nlink.to_s.size
-    }
+    @file.nlink
   end
 
   def user
@@ -44,10 +73,7 @@ class FileDetail
   end
 
   def size
-    {
-      number: @file.size,
-      word_count: @file.size.to_s.size
-    }
+    @file.size
   end
 
   def update_time
@@ -63,13 +89,5 @@ class FileDetail
 
   def within_six_months?
     @file.mtime >= Time.now.months_ago(6)
-  end
-
-  def block
-    @file.blocks
-  end
-
-  def length
-    @name.size
   end
 end
