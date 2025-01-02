@@ -24,8 +24,8 @@ class FileDetail
       user,
       group,
       format("%#{max_size_length}d", size),
-      format('%<month>2d月 %<day>2d', update_time),
-      within_six_months? ? format('%<hour>02d:%<min>02d', update_time) : format('%<year>5d', update_time),
+      @file.mtime.strftime('%_m月 %e'),
+      within_six_months? ? @file.mtime.strftime('%H:%M') : @file.mtime.strftime('%_5Y'),
       name
     ].join(' ')
   end
@@ -74,17 +74,6 @@ class FileDetail
 
   def size
     @file.size
-  end
-
-  def update_time
-    update_time = @file.mtime
-    {
-      year: update_time.year,
-      month: update_time.mon,
-      day: update_time.day,
-      hour: update_time.hour,
-      min: update_time.min
-    }
   end
 
   def within_six_months?
