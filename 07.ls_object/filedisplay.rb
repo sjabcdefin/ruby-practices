@@ -15,16 +15,12 @@ class FileDisplay
   def display_files
     @file_details = @file_names.map { |file_name| FileDetail.new(file_name) }
     if @options[:l_option]
-      max_size_length = calculate_max_size_length
-      max_link_length = calculate_max_link_length
-      total_blocks = calculate_total_blocks
       puts "合計 #{total_blocks / 2}"
       @file_details.each do |file_detail|
         puts file_detail.formatted_detail(max_size_length, max_link_length)
       end
     else
       output_rows = format_file_names_for_display
-      column_width = calculate_column_width
       output_rows.each do |row|
         puts row.compact.map { |file_name| file_name.ljust(column_width) }.join
       end
@@ -50,7 +46,6 @@ class FileDisplay
   end
 
   def format_file_names_for_display
-    interval = calculate_interval
     file_names = @file_details.map(&:name)
     file_names.each_slice(interval)
               .to_a
@@ -58,23 +53,23 @@ class FileDisplay
               .transpose
   end
 
-  def calculate_max_size_length
+  def max_size_length
     @file_details.map(&:size_word_count).max
   end
 
-  def calculate_max_link_length
+  def max_link_length
     @file_details.map(&:link_word_count).max
   end
 
-  def calculate_total_blocks
+  def total_blocks
     @file_details.sum(&:block)
   end
 
-  def calculate_interval
+  def interval
     @file_details.size.ceildiv(COLUMN_SIZE)
   end
 
-  def calculate_column_width
+  def column_width
     @file_details.map(&:name_length).max + COLUMN_SPACE
   end
 end
