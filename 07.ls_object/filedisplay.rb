@@ -75,10 +75,6 @@ class FileDisplay
   end
 
   def calculate_column_width
-    name_lengths = []
-    @file_details.each do |file_detail|
-      name_lengths << file_detail.name_length
-    end
-    name_lengths.max + COLUMN_SPACE
+    @file_details.map(&:name_length).max + COLUMN_SPACE
   end
 end
