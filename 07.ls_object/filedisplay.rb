@@ -48,7 +48,6 @@ class FileDisplay
   def format_file_names_for_display
     file_names = @file_details.map(&:name)
     file_names.each_slice(interval)
-              .to_a
               .map { |column| column.fill(nil, column.size...interval) }
               .transpose
   end
