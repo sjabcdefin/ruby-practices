@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative 'filedisplay'
+require_relative 'filedisplaypreparation'
 
-ls = FileDisplay.new
-ls.display_files
+ls = FileDisplayPreparation.new
+ls.display_files_based_on_format
