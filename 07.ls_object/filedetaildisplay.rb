@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class FileDetailRow
+class FileDetailDisplay
   def initialize(file_details)
     @file_details = file_details
   end

@@ -2,8 +2,8 @@
 
 require 'optparse'
 require_relative 'filedetail'
-require_relative 'filedetailrow'
-require_relative 'filenamecolumn'
+require_relative 'filedetaildisplay'
+require_relative 'filenamedisplay'
 
 class Ls
   def initialize
@@ -13,7 +13,7 @@ class Ls
   end
 
   def display_files_based_on_format
-    file_display_handler = @options[:l_option] ? FileDetailRow.new(@file_details) : FileNameColumn.new(@file_details)
+    file_display_handler = @options[:l_option] ? FileDetailDisplay.new(@file_details) : FileNameDisplay.new(@file_details)
     file_display_handler.display_files
   end
 

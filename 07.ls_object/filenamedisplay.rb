@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class FileNameColumn
+class FileNameDisplay
   COLUMN_SIZE = 3
   COLUMN_SPACE = 2
 
